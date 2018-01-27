@@ -7,6 +7,7 @@ import pickle
 import random
 import torch.optim as optim
 from torch.autograd import Variable
+from torch.nn import DataParallel
 
 from model import *
 from utils import *
@@ -24,7 +25,7 @@ def train(dataloader, start_epoch, epoch_num, class_num,
     """
     use_cuda = torch.cuda.is_available()
     if not net:
-        net = ColorizationNet(class_num)
+        net = DataParallel(ColorizationNet(class_num))
     classify_criterion = nn.CrossEntropyLoss()
     colorization_criterion = nn.MSELoss()
     optimizer = optim.Adadelta(net.parameters(), lr=lr)
