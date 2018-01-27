@@ -57,6 +57,7 @@ class Pascal(Dataset):
         label, img_name = self.img_list[idx]
         img = Image.open(os.path.join(self.root, 'JPEGImages', img_name+'.jpg'))
         img = self.crop(img)
+        img.convert('LAB')
         gray_img = self.totensor(self.grayscale(img))
         lab_img = self.totensor(ImageCms.applyTransform(img, self.labscale))
         return gray_img, lab_img[1:,:,:], label
