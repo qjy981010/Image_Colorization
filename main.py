@@ -66,7 +66,7 @@ def train(dataloader, start_epoch, epoch_num, class_num,
     return net
 
 
-def test(dataloader, class_num, net):
+def test(dataloader, class_num, net, root):
     """
     """
     use_cuda = torch.cuda.is_available()
@@ -97,7 +97,8 @@ def test(dataloader, class_num, net):
         print('Classification accuracy: %d %%' % (100 * correct / total))
 
         if i%10 == 0:
-            show_img(result, gray_img, ab_img)
+            save_img(os.path.join(root, str(i)), result.data,
+                     gray_img.data, ab_img.data)
 
 
 def main():

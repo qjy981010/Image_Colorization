@@ -1,6 +1,7 @@
 import pickle
 import torch
 import os
+import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageCms
 from torch.utils.data import Dataset
@@ -8,7 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 
-class LabTransformer(object):
+class LabSaver(object):
     """
     """
     def __init__(self, root):
@@ -31,7 +32,7 @@ class LabTransformer(object):
                     pickle.HIGHEST_PROTOCOL)
 
 
-def get_img_list(root, label_list, lab_transformer, training):
+def get_img_list(root, label_list, lab_saver, training):
     result = []
     train_val = 'train' if training else 'val'
     pkl_file = os.path.join(root, 'img_list_%s.pkl'%(train_val, ))
@@ -47,7 +48,7 @@ def get_img_list(root, label_list, lab_transformer, training):
                 for line in fp.readlines():
                     img_name = line.split()[0]
                     result.append((label_encoder[filename[0]], img_name))
-                    lab_transformer(img_name)
+                    lab_saver(img_name)
         pickle.dump(result, open(pkl_file, 'wb'), pickle.HIGHEST_PROTOCOL)
     return result
 
@@ -57,9 +58,9 @@ class Pascal(Dataset):
     """
     def __init__(self, root, label_list, training):
         super(Pascal, self).__init__()
-        lab_transformer = LabTransformer(os.path.join(root, 'JPEGImages'))
+        lab_saver = LabSaver(os.path.join(root, 'JPEGImages'))
         self.img_list = get_img_list(os.path.join(root, 'ImageSets/Main'),
-                                     label_list, lab_transformer, training)
+                                     label_list, lab_saver, training)
         self.root = os.path.join(root, 'JPEGImages')
 
         self.totensor = transforms.Compose([
@@ -74,7 +75,7 @@ class Pascal(Dataset):
         label, img_name = self.img_list[idx]
         img = pickle.load(open(os.path.join(self.root, img_name+'.pkl'), 'rb'))
         img = self.totensor(img)
-        return img[0, :, :].unsqueeze(0), img[1:, :, :], label
+        return img[0].unsqueeze(0), img[1:], label
 
 
 def load_data(root, label_list):
@@ -90,18 +91,31 @@ def load_data(root, label_list):
     return train_loader, test_loader
 
 
-def show_img(out_ab_img, gray_img, ab_img):
+class LabTensorToRGB(object):
+    """
+    """
+    def __init__(self):
+        srgb_profile = ImageCms.createProfile('sRGB')
+        lab_profile = ImageCms.createProfile('LAB')
+        self.rgbscale = ImageCms.buildTransformFromOpenProfiles(
+            lab_profile, srgb_profile, 'LAB', 'RGB'
+        )
+
+    def __call__(self, lab_tensor):
+        lab_tensor = lab_tensor.mul(255).byte()
+        np_img = np.transpose(lab_tensor.numpy(), (1, 2, 0))
+        img = Image.fromarray(np_img, mode='LAB')
+        img = ImageCms.applyTransform(img, self.rgbscale)
+        return img
+
+
+def save_img(root, out_ab_img, gray_img, ab_img):
     origin_img = torch.cat((gray_img, ab_img), 1)
     output_img = torch.cat((gray_img, out_ab_img), 1)
-    unloader = transforms.ToPILImage()
+    lab_imgs = torch.cat((origin_img, output_img), 2)
+    to_rgb = LabTensorToRGB()
 
-    origin_img = origin_img.data.cpu()
-    origin_img = unloader(origin_img)
-    output_img = output_img.data.cpu()
-    output_img = unloader(output_img)
-
-    f, axarr = plt.subplots(1, 2)
-    axarr[0, 0].set_title('origin')
-    axarr[0, 0].imshow(origin_img)
-    axarr[0, 1].set_title('output')
-    axarr[0, 1].imshow(output_img)
+    count = 0
+    for lab_img in lab_imgs[:2]:
+        img = to_rgb(lab_img)
+        img.save(os.path.join(root, '%d.jpg'%(count, )), 'JPEG')
