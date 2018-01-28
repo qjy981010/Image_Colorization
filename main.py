@@ -61,11 +61,10 @@ def train(dataloader, epoch_num, class_num,
 
             loss_sum += loss
             endtime = datetime.datetime.now()
-            print('batch:', i, end='\r')
+            print('batch: %d     ' %(i,), end='\r')
         print('epoch: %d     loss: %f' % (epoch, loss_sum))
         train_log(epoch, loss)
     print('Finished Training')
-    return net
 
 
 def test(dataloader, class_num, net, root):
@@ -99,7 +98,7 @@ def test(dataloader, class_num, net, root):
         total += label.size(0)
         correct += (classify_result == label).sum()
 
-        if i%10 == 0:
+        if i%20 == 0:
             save_img(root, i, result.data,
                      gray_img.data, ab_img.data)
     print('Classification accuracy: %d %%' % (100 * correct / total))
@@ -118,9 +117,9 @@ def main():
     model_path = 'colorization.pth'
     if os.path.exists(model_path):
         net.load_state_dict(torch.load(model_path))
-    #net = train(trainloader, 1, len(label_list))
-    #torch.save(net.state_dict(), 'colorization.pth')
-    #save_log()
+    train(trainloader, 20, len(label_list), net)
+    torch.save(net.state_dict(), 'colorization.pth')
+    save_log()
     test(testloader, len(label_list), net, data_root)
 
 
