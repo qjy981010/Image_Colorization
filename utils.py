@@ -24,6 +24,7 @@ def get_img_list(root, label_list, training):
                 for line in fp.readlines():
                     result.append((label_encoder[filename[0]],
                                    line.split()[0]))
+            break
         pickle.dump(result, open(pkl_file, 'wb'), True)
     return result
 
@@ -49,6 +50,15 @@ class Pascal(Dataset):
             srgb_profile, lab_profile, 'RGB', 'LAB')
 
         self.totensor = transforms.ToTensor()
+        """
+        self.data = []
+        for label, img_name in self.img_list:
+            img = Image.open(os.path.join(self.root, 'JPEGImages', img_name+'.jpg'))
+            img = self.crop(img)
+            gray_img = self.totensor(self.grayscale(img))
+            lab_img = self.totensor(ImageCms.applyTransform(img, self.labscale))
+            self.data.append((gray_img, lab_img[1:, :, :], label))
+        """
 
     def __len__(self):
         return len(self.img_list)
@@ -60,6 +70,7 @@ class Pascal(Dataset):
         gray_img = self.totensor(self.grayscale(img))
         lab_img = self.totensor(ImageCms.applyTransform(img, self.labscale))
         return gray_img, lab_img[1:,:,:], label
+        #return self.data[idx]
 
 
 def load_data(root, label_list):
@@ -69,9 +80,9 @@ def load_data(root, label_list):
     train_set = Pascal(root, label_list, True)
     test_set = Pascal(root, label_list, False)
     train_loader = DataLoader(train_set, batch_size=256,
-                              shuffle=True, num_workers=8)
+                              shuffle=True, num_workers=0)
     test_loader = DataLoader(test_set, batch_size=256,
-                             shuffle=False, num_workers=8)
+                             shuffle=False, num_workers=0)
     return train_loader, test_loader
 
 

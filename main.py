@@ -5,6 +5,7 @@ import torch
 import os
 import pickle
 import random
+import datetime
 import torch.optim as optim
 from torch.autograd import Variable
 from torch.nn import DataParallel
@@ -40,7 +41,11 @@ def train(dataloader, start_epoch, epoch_num, class_num,
     net.train()
     for epoch in range(start_epoch, start_epoch+epoch_num):
         loss_sum = 0
+        #starttime = datetime.datetime.now()
         for i, (gray_img, ab_img, label) in enumerate(dataloader):
+            #endtime = datetime.datetime.now()
+            #print('loading a batch of image used ', endtime-starttime)
+            #starttime = datetime.datetime.now()
             if use_cuda:
                 gray_img = gray_img.cuda()
                 ab_img = ab_img.cuda()
@@ -58,6 +63,9 @@ def train(dataloader, start_epoch, epoch_num, class_num,
             optimizer.step()
 
             loss_sum += loss
+            #endtime = datetime.datetime.now()
+            #print('process a batch of image used ', endtime-starttime)
+            print('batch:', i, end='\r')
         print('epoch: %d     loss: %f' % (epoch, loss_sum))
     print('Finished Training')
     return net
@@ -103,7 +111,7 @@ def main():
                   'dog', 'horse', 'motorbike', 'person', 'pottedplant',
                   'sheep', 'sofa', 'train', 'tvmonitor']
     trainloader, testloader = load_data('data/', label_list)
-    net = train(trainloader, 0, 10, len(label_list))
+    net = train(trainloader, 0, 1, len(label_list))
     torch.save(net.state_dict(), 'colorization.pth')
 
 
