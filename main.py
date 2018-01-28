@@ -41,11 +41,7 @@ def train(dataloader, start_epoch, epoch_num, class_num,
     net.train()
     for epoch in range(start_epoch, start_epoch+epoch_num):
         loss_sum = 0
-        #starttime = datetime.datetime.now()
         for i, (gray_img, ab_img, label) in enumerate(dataloader):
-            #endtime = datetime.datetime.now()
-            #print('loading a batch of image used ', endtime-starttime)
-            #starttime = datetime.datetime.now()
             if use_cuda:
                 gray_img = gray_img.cuda()
                 ab_img = ab_img.cuda()
@@ -63,8 +59,7 @@ def train(dataloader, start_epoch, epoch_num, class_num,
             optimizer.step()
 
             loss_sum += loss
-            #endtime = datetime.datetime.now()
-            #print('process a batch of image used ', endtime-starttime)
+            endtime = datetime.datetime.now()
             print('batch:', i, end='\r')
         print('epoch: %d     loss: %f' % (epoch, loss_sum))
     print('Finished Training')

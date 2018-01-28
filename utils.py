@@ -24,10 +24,10 @@ class LabTransformer(object):
             srgb_profile, lab_profile, 'RGB', 'LAB')
 
     def __call__(self, img_name):
-        img = Image.open(os.path.join(self.root, 'JPEGImages', img_name+'.jpg'))
+        img = Image.open(os.path.join(self.root, img_name+'.jpg'))
         img = self.crop(img)
         lab_img = ImageCms.applyTransform(img, self.labscale)
-        pickle.dump(lab_img, os.join(self.root, img_name+'.pkl'),
+        pickle.dump(lab_img, open(os.path.join(self.root, img_name+'.pkl'), 'wb'),
                     pickle.HIGHEST_PROTOCOL)
 
 
@@ -38,7 +38,6 @@ def get_img_list(root, label_list, lab_transformer, training):
     if os.path.exists(pkl_file):
         result = pickle.load(open(pkl_file, 'rb'))
     else:
-        os.system('rm '+os.path.join(root, '*.pkl'))
         label_encoder = {word: idx for idx, word in enumerate(label_list)}
         for file in os.listdir(root):
             filename = file[:-4].split('_')
@@ -73,9 +72,9 @@ class Pascal(Dataset):
 
     def __getitem__(self, idx):
         label, img_name = self.img_list[idx]
-        img = pickle.load(open(os.path.join(self.root, img_name+'.pkl')), 'rb')
+        img = pickle.load(open(os.path.join(self.root, img_name+'.pkl'), 'rb'))
         img = self.totensor(img)
-        return img[0, :, :], img[1:,:,:], label
+        return img[0, :, :].unsqueeze(0), img[1:, :, :], label
 
 
 def load_data(root, label_list):
