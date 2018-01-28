@@ -58,8 +58,6 @@ def train(dataloader, start_epoch, epoch_num, class_num,
             optimizer.step()
 
             loss_sum += loss
-            if i%10 == 0:
-                print(loss)
         print('epoch: %d     loss: %f' % (epoch, loss_sum))
     print('Finished Training')
     return net
@@ -105,7 +103,8 @@ def main():
                   'dog', 'horse', 'motorbike', 'person', 'pottedplant',
                   'sheep', 'sofa', 'train', 'tvmonitor']
     trainloader, testloader = load_data('data/', label_list)
-    train(trainloader, 0, 1, len(label_list))
+    net = train(trainloader, 0, 10, len(label_list))
+    torch.save(net.state_dict(), 'colorization.pth')
 
 
 if __name__ == '__main__':

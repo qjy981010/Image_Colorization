@@ -57,7 +57,6 @@ class Pascal(Dataset):
         label, img_name = self.img_list[idx]
         img = Image.open(os.path.join(self.root, 'JPEGImages', img_name+'.jpg'))
         img = self.crop(img)
-        img.convert('LAB')
         gray_img = self.totensor(self.grayscale(img))
         lab_img = self.totensor(ImageCms.applyTransform(img, self.labscale))
         return gray_img, lab_img[1:,:,:], label
@@ -69,10 +68,10 @@ def load_data(root, label_list):
     print('==== Loading data.. ====')
     train_set = Pascal(root, label_list, True)
     test_set = Pascal(root, label_list, False)
-    train_loader = DataLoader(train_set, batch_size=4,
-                            shuffle=True, num_workers=0)
-    test_loader = DataLoader(test_set, batch_size=4,
-                            shuffle=False, num_workers=0)
+    train_loader = DataLoader(train_set, batch_size=256,
+                              shuffle=True, num_workers=8)
+    test_loader = DataLoader(test_set, batch_size=256,
+                             shuffle=False, num_workers=8)
     return train_loader, test_loader
 
 
