@@ -20,7 +20,7 @@ label_list = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus',
               'train', 'tvmonitor']
 
 
-def train(dataloader, start_epoch, epoch_num, class_num,
+def train(dataloader, epoch_num, class_num,
           net=None, lr=0.001, alpha=0.0033):
     """
     """
@@ -38,6 +38,7 @@ def train(dataloader, start_epoch, epoch_num, class_num,
         print("*****   Warning: Cuda isn't available!  *****")
 
     print('====   Training..   ====')
+    start_epoch = get_start_epoch()
     net.train()
     for epoch in range(start_epoch, start_epoch+epoch_num):
         loss_sum = 0
@@ -62,6 +63,7 @@ def train(dataloader, start_epoch, epoch_num, class_num,
             endtime = datetime.datetime.now()
             print('batch:', i, end='\r')
         print('epoch: %d     loss: %f' % (epoch, loss_sum))
+        train_log(epoch, loss)
     print('Finished Training')
     return net
 
@@ -69,6 +71,10 @@ def train(dataloader, start_epoch, epoch_num, class_num,
 def test(dataloader, class_num, net, root):
     """
     """
+    root = os.path.join(root, 'result')
+    if not os.path.exists(root):
+        os.makedirs(root)
+
     use_cuda = torch.cuda.is_available()
     if use_cuda:
         net = net.cuda()
@@ -86,29 +92,36 @@ def test(dataloader, class_num, net, root):
             label = label.cuda()
         gray_img = Variable(gray_img)
         ab_img = Variable(ab_img)
-        label = Variable(label)
 
-        optimizer.zero_grad()
         classify_result, result = net(gray_img)
         classify_result = torch.max(classify_result.data, 1)[1]
 
         total += label.size(0)
-        correct += (classify_result == label)
-        print('Classification accuracy: %d %%' % (100 * correct / total))
+        correct += (classify_result == label).sum()
 
         if i%10 == 0:
-            save_img(os.path.join(root, str(i)), result.data,
+            save_img(root, i, result.data,
                      gray_img.data, ab_img.data)
+    print('Classification accuracy: %d %%' % (100 * correct / total))
+    test_log(correct / total)
 
 
 def main():
+    data_root = 'data/'
     label_list = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle',
                   'bus', 'car', 'cat', 'chair', 'cow', 'diningtable',
                   'dog', 'horse', 'motorbike', 'person', 'pottedplant',
                   'sheep', 'sofa', 'train', 'tvmonitor']
-    trainloader, testloader = load_data('data/', label_list)
-    net = train(trainloader, 0, 1, len(label_list))
-    torch.save(net.state_dict(), 'colorization.pth')
+    trainloader, testloader = load_data(data_root, label_list)
+    net = DataParallel(ColorizationNet(len(label_list)))
+
+    model_path = 'colorization.pth'
+    if os.path.exists(model_path):
+        net.load_state_dict(torch.load(model_path))
+    #net = train(trainloader, 1, len(label_list))
+    #torch.save(net.state_dict(), 'colorization.pth')
+    #save_log()
+    test(testloader, len(label_list), net, data_root)
 
 
 if __name__ == '__main__':

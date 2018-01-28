@@ -1,6 +1,7 @@
 import pickle
 import torch
 import os
+import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image, ImageCms
@@ -86,7 +87,7 @@ def load_data(root, label_list):
     test_set = Pascal(root, label_list, False)
     train_loader = DataLoader(train_set, batch_size=256,
                               shuffle=True, num_workers=0)
-    test_loader = DataLoader(test_set, batch_size=256,
+    test_loader = DataLoader(test_set, batch_size=128,
                              shuffle=False, num_workers=0)
     return train_loader, test_loader
 
@@ -103,13 +104,13 @@ class LabTensorToRGB(object):
 
     def __call__(self, lab_tensor):
         lab_tensor = lab_tensor.mul(255).byte()
-        np_img = np.transpose(lab_tensor.numpy(), (1, 2, 0))
+        np_img = np.transpose(lab_tensor.cpu().numpy(), (1, 2, 0))
         img = Image.fromarray(np_img, mode='LAB')
         img = ImageCms.applyTransform(img, self.rgbscale)
         return img
 
 
-def save_img(root, out_ab_img, gray_img, ab_img):
+def save_img(root, i, out_ab_img, gray_img, ab_img):
     origin_img = torch.cat((gray_img, ab_img), 1)
     output_img = torch.cat((gray_img, out_ab_img), 1)
     lab_imgs = torch.cat((origin_img, output_img), 2)
@@ -118,4 +119,35 @@ def save_img(root, out_ab_img, gray_img, ab_img):
     count = 0
     for lab_img in lab_imgs[:2]:
         img = to_rgb(lab_img)
-        img.save(os.path.join(root, '%d.jpg'%(count, )), 'JPEG')
+        img.save(os.path.join(root, '%d_%d.jpg'%(i, count)), 'JPEG')
+
+
+log_file = 'log.txt'
+
+def train_log(epoch, loss):
+    with open(log_file, 'a') as fp:
+        fp.write('%s    epoch: %d    loss: %f\n' % (datetime.datetime.now(),
+                                                    epoch, loss))
+
+
+def get_start_epoch():
+    if not os.path.exists(log_file):
+        os.mknod(log_file)
+    with open(log_file, 'a+') as fp:
+        lines = fp.readlines()
+        fp.write('start\n')
+        for i in range(1, len(lines)+1):
+            if lines[-i] == 'saved':
+                return int(line[-i-1].split()[4])+1
+    return 0
+
+
+def save_log():
+    with open(log_file, 'a') as fp:
+        fp.write('saved\n')
+
+
+def test_log(accuracy):
+    with open(log_file, 'a') as fp:
+        fp.write('Classfication accuracy: %d %%\n' % (accuracy*100, ))
+
