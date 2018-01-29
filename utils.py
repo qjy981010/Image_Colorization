@@ -85,9 +85,9 @@ def load_data(root, label_list):
     print('==== Loading data.. ====')
     train_set = Pascal(root, label_list, True)
     test_set = Pascal(root, label_list, False)
-    train_loader = DataLoader(train_set, batch_size=256,
+    train_loader = DataLoader(train_set, batch_size=128,
                               shuffle=True, num_workers=0)
-    test_loader = DataLoader(test_set, batch_size=128,
+    test_loader = DataLoader(test_set, batch_size=64,
                              shuffle=False, num_workers=0)
     return train_loader, test_loader
 
@@ -124,21 +124,21 @@ def save_img(root, i, out_ab_img, gray_img, ab_img):
 
 log_file = 'log.txt'
 
-def train_log(epoch, loss):
+def train_log(epoch, loss, classify_loss, color_loss):
     with open(log_file, 'a') as fp:
-        fp.write('%s    epoch: %d    loss: %f\n' % (datetime.datetime.now(),
-                                                    epoch, loss))
+        fp.write('epoch: %d  loss: %f  classify loss: %f  color loss: %f\n' %
+                 (epoch, loss, classify_loss, color_loss))
 
 
 def get_start_epoch():
     if not os.path.exists(log_file):
         os.mknod(log_file)
-    with open(log_file, 'a+') as fp:
+    with open(log_file, 'r+') as fp:
         lines = fp.readlines()
         fp.write('start\n')
         for i in range(1, len(lines)+1):
-            if lines[-i] == 'saved':
-                return int(line[-i-1].split()[4])+1
+            if lines[-i][:5] == 'saved':
+                return int(lines[-i-1].split()[1])+1
     return 0
 
 
