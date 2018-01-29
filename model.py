@@ -9,6 +9,7 @@ class LowLevelNet(nn.Module):
     def __init__(self, ):
         super(LowLevelNet, self).__init__()
         self.cnn = self._get_cnn_layers()
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.cnn(x)
@@ -22,6 +23,17 @@ class LowLevelNet(nn.Module):
             cnn_layers.append(nn.BatchNorm2d(channels[i]))
             cnn_layers.append(nn.ReLU(inplace=True))
         return nn.Sequential(*cnn_layers)
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
 
 
 class GlobalLevelNet(nn.Module):
@@ -42,6 +54,7 @@ class GlobalLevelNet(nn.Module):
             nn.Linear(512, 256),
             nn.ReLU(inplace=True),
         )
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.cnn(x)
@@ -58,6 +71,21 @@ class GlobalLevelNet(nn.Module):
             cnn_layers.append(nn.ReLU(inplace=True))
         return nn.Sequential(*cnn_layers)
 
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+            elif isinstance(m, nn.Linear):
+                n = m.weight.size(1)
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
+
 
 class ClassificationNet(nn.Module):
     """
@@ -70,10 +98,18 @@ class ClassificationNet(nn.Module):
             nn.Dropout(),
             nn.Linear(256, class_num),
         )
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.classifier(x)
         return x
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                n = m.weight.size(1)
+                m.weight.data.normal_(0, 0.01)
+                m.bias.data.zero_()
 
 
 class MidLevelNet(nn.Module):
@@ -82,6 +118,7 @@ class MidLevelNet(nn.Module):
     def __init__(self):
         super(MidLevelNet, self).__init__()
         self.cnn = self._get_cnn_layers()
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.cnn(x)
@@ -96,6 +133,17 @@ class MidLevelNet(nn.Module):
             cnn_layers.append(nn.ReLU(inplace=True))
         return nn.Sequential(*cnn_layers)
 
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
 
 class FusionNet(nn.Module):
     """
@@ -105,6 +153,7 @@ class FusionNet(nn.Module):
         self.conv = nn.Conv2d(512, 256, 3, 1, 1)
         self.bn = nn.BatchNorm2d(256)
         self.relu = nn.ReLU(inplace=True)
+        self._initialize_weights()
 
     def forward(self, mid_result, global_result):
         height, width = mid_result.size()[2:]
@@ -116,6 +165,18 @@ class FusionNet(nn.Module):
         result = self.bn(self.relu(result))
         return result
 
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
+
 
 class ColorizationPart(nn.Module):
     """
@@ -123,6 +184,7 @@ class ColorizationPart(nn.Module):
     def __init__(self):
         super(ColorizationPart, self).__init__()
         self.cnn = self._get_cnn_layers()
+        self._initialize_weights()
 
     def forward(self, x):
         x = self.cnn(x)
@@ -144,6 +206,18 @@ class ColorizationPart(nn.Module):
                     cnn_layers.append(nn.ReLU(inplace=True))
                 in_channel = channel
         return nn.Sequential(*cnn_layers)
+
+    def _initialize_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
+                m.weight.data.normal_(0, math.sqrt(2. / n))
+                if m.bias is not None:
+                    m.bias.data.zero_()
+            elif isinstance(m, nn.BatchNorm2d):
+                m.weight.data.fill_(1)
+                m.bias.data.zero_()
+
 
 
 class ColorizationNet(nn.Module):

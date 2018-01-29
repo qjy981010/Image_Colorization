@@ -64,7 +64,6 @@ def train(dataloader, epoch_num, class_num,
             loss_sum += loss
             color_loss_sum += colorization_loss
             classify_loss_sum += classify_loss
-            endtime = datetime.datetime.now()
             print('batch: %d     ' %(i,), end='\r')
         print('epoch: %d  loss: %f  classify loss: %f  color loss: %f' %
               (epoch, loss_sum, classify_loss_sum, color_loss_sum))
