@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 
 class LowLevelNet(nn.Module):
@@ -45,10 +46,8 @@ class GlobalLevelNet(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(7*7*512, 1024),
             nn.ReLU(inplace=True),
-            nn.Dropout(),
             nn.Linear(1024, 512),
             nn.ReLU(inplace=True),
-            nn.Dropout(),
         )
         self.global_out_layer = nn.Sequential(
             nn.Linear(512, 256),
@@ -95,7 +94,6 @@ class ClassificationNet(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(512, 256),
             nn.ReLU(inplace=True),
-            nn.Dropout(),
             nn.Linear(256, class_num),
         )
         self._initialize_weights()

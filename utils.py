@@ -17,7 +17,6 @@ class LabSaver(object):
         self.root = root
         self.crop = transforms.Compose([
             transforms.Resize(256, Image.ANTIALIAS),
-            transforms.RandomCrop(224),
         ])
 
         srgb_profile = ImageCms.createProfile('sRGB')
@@ -65,6 +64,7 @@ class Pascal(Dataset):
         self.root = os.path.join(root, 'JPEGImages')
 
         self.totensor = transforms.Compose([
+            transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
         ])
@@ -85,7 +85,7 @@ def load_data(root, label_list):
     print('==== Loading data.. ====')
     train_set = Pascal(root, label_list, True)
     test_set = Pascal(root, label_list, False)
-    train_loader = DataLoader(train_set, batch_size=128,
+    train_loader = DataLoader(train_set, batch_size=256,
                               shuffle=True, num_workers=0)
     test_loader = DataLoader(test_set, batch_size=64,
                              shuffle=False, num_workers=0)
@@ -124,10 +124,10 @@ def save_img(root, i, out_ab_img, gray_img, ab_img):
 
 log_file = 'log.txt'
 
-def train_log(epoch, loss, classify_loss, color_loss):
+def train_log(epoch, classify_loss, color_loss, loss):
     with open(log_file, 'a') as fp:
-        fp.write('epoch: %d  loss: %f  classify loss: %f  color loss: %f\n' %
-                 (epoch, loss, classify_loss, color_loss))
+        fp.write('epoch: %d  classify loss: %f  color loss: %f  loss: %f\n' %
+                 (epoch, classify_loss, color_loss, loss))
 
 
 def get_start_epoch():

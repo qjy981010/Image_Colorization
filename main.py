@@ -27,9 +27,18 @@ def train(dataloader, epoch_num, class_num,
     use_cuda = torch.cuda.is_available()
     if not net:
         net = DataParallel(ColorizationNet(class_num))
+
+    ########
+    #for p in net.module.mid_level_net.parameters():
+    #    p.requires_grad = False
+    #for p in net.module.fusion.parameters():
+    #    p.requires_grad = False
+    #for p in net.module.colorization.parameters():
+    #    p.requires_grad = False
+    ########
     classify_criterion = nn.CrossEntropyLoss()
     colorization_criterion = nn.MSELoss()
-    optimizer = optim.Adadelta(net.parameters(), lr=lr)
+    optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=lr)# net.parameters(), lr=lr)
     if use_cuda:
         net = net.cuda()
         classify_criterion = classify_criterion.cuda()
@@ -44,6 +53,7 @@ def train(dataloader, epoch_num, class_num,
         loss_sum = 0
         color_loss_sum = 0
         classify_loss_sum = 0
+        batch_loss = 0
         for i, (gray_img, ab_img, label) in enumerate(dataloader):
             if use_cuda:
                 gray_img = gray_img.cuda()
@@ -55,19 +65,28 @@ def train(dataloader, epoch_num, class_num,
 
             optimizer.zero_grad()
             classify_result, result = net(gray_img)
+            ###################
+            #x = net.module.low_level_net(gray_img)
+            #classify_input = net.module.global_level_net(x)[0]
+            #classify_result = net.module.classifier(classify_input)
+            ###################
             classify_loss = classify_criterion(classify_result, label)
             colorization_loss = colorization_criterion(result, ab_img)
+            #colorization_loss = 0
             loss = colorization_loss + alpha * classify_loss
             loss.backward()
             optimizer.step()
 
             loss_sum += loss
+            batch_loss += loss
             color_loss_sum += colorization_loss
             classify_loss_sum += classify_loss
-            print('batch: %d     ' %(i,), end='\r')
-        print('epoch: %d  loss: %f  classify loss: %f  color loss: %f' %
-              (epoch, loss_sum, classify_loss_sum, color_loss_sum))
-        train_log(epoch, loss_sum, classify_loss_sum, color_loss_sum)
+            if i%100 == 0 and i != 0:
+                print('batch: %d  loss: %f    ' % (i, batch_loss/100))
+                batch_loss = 0
+        print('epoch: %d  classify loss: %f  color loss: %f  loss: %f' %
+              (epoch, classify_loss_sum/(i+1), color_loss_sum/(i+1), loss_sum/(i+1)))
+        train_log(epoch, classify_loss_sum/(i+1), color_loss_sum/(i+1), loss_sum/(i+1))
     print('Finished Training')
 
 
@@ -121,10 +140,10 @@ def main():
     model_path = 'colorization.pth'
     if os.path.exists(model_path):
         net.load_state_dict(torch.load(model_path))
-    train(trainloader, 5, len(label_list), net=net, lr=0.01)
+    train(trainloader, 10, len(label_list), net=net, lr=0.0005, alpha=1/300)
     torch.save(net.state_dict(), 'colorization.pth')
     save_log()
-    # test(testloader, len(label_list), net, data_root)
+    #test(testloader, len(label_list), net, data_root)
 
 
 if __name__ == '__main__':
