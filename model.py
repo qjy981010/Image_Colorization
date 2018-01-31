@@ -45,12 +45,15 @@ class GlobalLevelNet(nn.Module):
         self.cnn = self._get_cnn_layers()
         self.fc = nn.Sequential(
             nn.Linear(7*7*512, 1024),
+            nn.BatchNorm1d(1024)
             nn.ReLU(inplace=True),
             nn.Linear(1024, 512),
+            nn.BatchNorm1d(512)
             nn.ReLU(inplace=True),
         )
         self.global_out_layer = nn.Sequential(
             nn.Linear(512, 256),
+            nn.BatchNorm1d(256)
             nn.ReLU(inplace=True),
         )
         self._initialize_weights()
@@ -93,6 +96,7 @@ class ClassificationNet(nn.Module):
         super(ClassificationNet, self).__init__()
         self.classifier = nn.Sequential(
             nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
             nn.ReLU(inplace=True),
             nn.Linear(256, class_num),
         )

@@ -38,7 +38,7 @@ def train(dataloader, epoch_num, class_num,
     ########
     classify_criterion = nn.CrossEntropyLoss()
     colorization_criterion = nn.MSELoss()
-    optimizer = optim.Adam(filter(lambda p: p.requires_grad, net.parameters()), lr=lr)# net.parameters(), lr=lr)
+    optimizer = optim.Adadelta(filter(lambda p: p.requires_grad, net.parameters()), lr=lr)# net.parameters(), lr=lr)
     if use_cuda:
         net = net.cuda()
         classify_criterion = classify_criterion.cuda()
@@ -140,7 +140,7 @@ def main():
     model_path = 'colorization.pth'
     if os.path.exists(model_path):
         net.load_state_dict(torch.load(model_path))
-    train(trainloader, 10, len(label_list), net=net, lr=0.0005, alpha=1/300)
+    train(trainloader, 10, len(label_list), net=net, lr=1, alpha=1/300)
     torch.save(net.state_dict(), 'colorization.pth')
     save_log()
     #test(testloader, len(label_list), net, data_root)
