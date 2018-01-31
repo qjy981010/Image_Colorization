@@ -143,7 +143,7 @@ def main():
     train(trainloader, 10, len(label_list), net=net, lr=1, alpha=1/300)
     torch.save(net.state_dict(), 'colorization.pth')
     save_log()
-    #test(testloader, len(label_list), net, data_root)
+    test(testloader, len(label_list), net, data_root)
 
 
 if __name__ == '__main__':

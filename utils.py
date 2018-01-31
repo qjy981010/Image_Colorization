@@ -60,7 +60,7 @@ class Pascal(Dataset):
         super(Pascal, self).__init__()
         lab_saver = LabSaver(os.path.join(root, 'JPEGImages'))
         self.img_list = get_img_list(os.path.join(root, 'ImageSets/Main'),
-                                     label_list, lab_saver, training)
+                label_list, lab_saver, training)[:1000]
         self.root = os.path.join(root, 'JPEGImages')
 
         self.totensor = transforms.Compose([
@@ -84,10 +84,10 @@ def load_data(root, label_list):
     """
     print('==== Loading data.. ====')
     train_set = Pascal(root, label_list, True)
-    test_set = Pascal(root, label_list, False)
-    train_loader = DataLoader(train_set, batch_size=256,
+    #test_set = Pascal(root, label_list, False)
+    train_loader = DataLoader(train_set, batch_size=32,
                               shuffle=True, num_workers=0)
-    test_loader = DataLoader(test_set, batch_size=64,
+    test_loader = DataLoader(train_set, batch_size=32,
                              shuffle=False, num_workers=0)
     return train_loader, test_loader
 
