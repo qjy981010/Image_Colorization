@@ -71,10 +71,10 @@ def train(dataloader, epoch_num, class_num,
             #classify_input = net.module.global_level_net(x)[0]
             #classify_result = net.module.classifier(classify_input)
             ###################
-            posi = posi.nonzero()
+            posi = posi.nonzero().cuda()
             if posi.max() > 0:
                 classify_result = classify_result[posi, :].squeeze(1)
-                label = label[posi, :].squeeze(1)
+                label = label[[int(x) for x in posi]]
                 classify_loss = classify_criterion(classify_result, label)
             else:
                 classify_loss = 0

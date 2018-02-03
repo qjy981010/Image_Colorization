@@ -41,14 +41,14 @@ def get_img_list(root, label_list, lab_saver):
         label_encoder = {word: idx for idx, word in enumerate(label_list)}
         for file in os.listdir(root):
             filename = file[:-4].split('_')
-            if len(filename) == 1 or filename[1] == 'list':
+            if len(filename) == 1 or filename[1] != 'trainval':
                 continue
             label = label_encoder[filename[0]]
             with open(os.path.join(root, file), 'r') as fp:
                 for line in fp.readlines():
                     img_name, posi = line.split()
                     result.append((label, img_name, posi == '1'))
-                    #lab_saver(img_name)##################################
+                    #lab_saver(img_name)
         pickle.dump(result, open(pkl_file, 'wb'), pickle.HIGHEST_PROTOCOL)
     return result
 
@@ -56,7 +56,7 @@ def get_img_list(root, label_list, lab_saver):
 class Pascal(Dataset):
     """
     """
-    def __init__(self, img_list):
+    def __init__(self, img_list, root):
         super(Pascal, self).__init__()
         self.img_list = img_list
         self.root = os.path.join(root, 'JPEGImages')
@@ -86,8 +86,8 @@ def load_data(root, label_list):
     img_list = get_img_list(os.path.join(root, 'ImageSets/Main'),
                             label_list, lab_saver)
 
-    train_set = Pascal(img_list[:-10000])
-    test_set = Pascal(img_list[-10000:])
+    train_set = Pascal(img_list[:-10000], root)
+    test_set = Pascal(img_list[-10000:], root)
     train_loader = DataLoader(train_set, batch_size=128,
                               shuffle=True, num_workers=0)
     test_loader = DataLoader(test_set, batch_size=64,
