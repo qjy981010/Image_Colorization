@@ -54,6 +54,7 @@ def train(dataloader, epoch_num, class_num,
         color_loss_sum = 0
         classify_loss_sum = 0
         batch_loss = 0
+        start_time = datetime.datetime.now()
         for i, (gray_img, ab_img, label) in enumerate(dataloader):
             if use_cuda:
                 gray_img = gray_img.cuda()
@@ -84,9 +85,11 @@ def train(dataloader, epoch_num, class_num,
             if i%100 == 0 and i != 0:
                 print('batch: %d  loss: %f    ' % (i, batch_loss/100))
                 batch_loss = 0
-        print('epoch: %d  classify loss: %f  color loss: %f  loss: %f' %
-              (epoch, classify_loss_sum/(i+1), color_loss_sum/(i+1), loss_sum/(i+1)))
+        end_time = datetime.datetime.now()
+        print('epoch: %d  classify loss: %f  color loss: %f  loss: %f  time: %s' %
+              (epoch, classify_loss_sum/(i+1), color_loss_sum/(i+1), loss_sum/(i+1), end_time-start_time))
         train_log(epoch, classify_loss_sum/(i+1), color_loss_sum/(i+1), loss_sum/(i+1))
+        torch.save(net.state_dict(), 'colorization.pth')
     print('Finished Training')
 
 
@@ -140,10 +143,10 @@ def main():
     model_path = 'colorization.pth'
     if os.path.exists(model_path):
         net.load_state_dict(torch.load(model_path))
-    train(trainloader, 10, len(label_list), net=net, lr=1, alpha=1/300)
-    torch.save(net.state_dict(), 'colorization.pth')
-    save_log()
-    test(testloader, len(label_list), net, data_root)
+    train(trainloader, 200, len(label_list), net=net, lr=1, alpha=1/300)
+    #save_log()
+    #torch.save(net.state_dict(), 'colorization.pth')
+    #test(testloader, len(label_list), net, data_root)
 
 
 if __name__ == '__main__':

@@ -60,12 +60,13 @@ class Pascal(Dataset):
         super(Pascal, self).__init__()
         lab_saver = LabSaver(os.path.join(root, 'JPEGImages'))
         self.img_list = get_img_list(os.path.join(root, 'ImageSets/Main'),
-                label_list, lab_saver, training)[:1000]
+                label_list, lab_saver, training)#[:1000]
         self.root = os.path.join(root, 'JPEGImages')
 
         self.totensor = transforms.Compose([
             transforms.RandomCrop(224),
             transforms.RandomHorizontalFlip(),
+            #transforms.CenterCrop(224),
             transforms.ToTensor(),
         ])
 
@@ -84,10 +85,10 @@ def load_data(root, label_list):
     """
     print('==== Loading data.. ====')
     train_set = Pascal(root, label_list, True)
-    #test_set = Pascal(root, label_list, False)
-    train_loader = DataLoader(train_set, batch_size=32,
+    test_set = Pascal(root, label_list, False)
+    train_loader = DataLoader(train_set, batch_size=128,
                               shuffle=True, num_workers=0)
-    test_loader = DataLoader(train_set, batch_size=32,
+    test_loader = DataLoader(test_set, batch_size=64,
                              shuffle=False, num_workers=0)
     return train_loader, test_loader
 
@@ -117,9 +118,10 @@ def save_img(root, i, out_ab_img, gray_img, ab_img):
     to_rgb = LabTensorToRGB()
 
     count = 0
-    for lab_img in lab_imgs[:2]:
+    for lab_img in lab_imgs[:10]:
         img = to_rgb(lab_img)
         img.save(os.path.join(root, '%d_%d.jpg'%(i, count)), 'JPEG')
+        count += 1
 
 
 log_file = 'log.txt'
@@ -137,8 +139,8 @@ def get_start_epoch():
         lines = fp.readlines()
         fp.write('start\n')
         for i in range(1, len(lines)+1):
-            if lines[-i][:5] == 'saved':
-                return int(lines[-i-1].split()[1])+1
+            if lines[-i][:5] == 'epoch':
+                return int(lines[-i].split()[1])+1
     return 0
 
 

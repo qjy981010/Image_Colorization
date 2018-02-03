@@ -164,7 +164,7 @@ class FusionNet(nn.Module):
         result = torch.cat((mid_result, global_result), 1)
 
         result = self.conv(result)
-        result = self.bn(self.relu(result))
+        result = self.relu(self.bn(result))
         return result
 
     def _initialize_weights(self):
