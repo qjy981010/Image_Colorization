@@ -32,23 +32,23 @@ class LabSaver(object):
                     pickle.HIGHEST_PROTOCOL)
 
 
-def get_img_list(root, label_list, lab_saver, training):
+def get_img_list(root, label_list, lab_saver):
     result = []
-    train_val = 'train' if training else 'val'
-    pkl_file = os.path.join(root, 'img_list_%s.pkl'%(train_val, ))
+    pkl_file = os.path.join(root, 'img_list.pkl')
     if os.path.exists(pkl_file):
         result = pickle.load(open(pkl_file, 'rb'))
     else:
         label_encoder = {word: idx for idx, word in enumerate(label_list)}
         for file in os.listdir(root):
             filename = file[:-4].split('_')
-            if len(filename) == 1 or filename[1] != train_val:
+            if len(filename) == 1 or filename[1] == 'list':
                 continue
+            label = label_encoder[filename[0]]
             with open(os.path.join(root, file), 'r') as fp:
                 for line in fp.readlines():
-                    img_name = line.split()[0]
-                    result.append((label_encoder[filename[0]], img_name))
-                    lab_saver(img_name)
+                    img_name, posi = line.split()
+                    result.append((label, img_name, posi == '1'))
+                    #lab_saver(img_name)##################################
         pickle.dump(result, open(pkl_file, 'wb'), pickle.HIGHEST_PROTOCOL)
     return result
 
@@ -56,11 +56,9 @@ def get_img_list(root, label_list, lab_saver, training):
 class Pascal(Dataset):
     """
     """
-    def __init__(self, root, label_list, training):
+    def __init__(self, img_list):
         super(Pascal, self).__init__()
-        lab_saver = LabSaver(os.path.join(root, 'JPEGImages'))
-        self.img_list = get_img_list(os.path.join(root, 'ImageSets/Main'),
-                label_list, lab_saver, training)#[:1000]
+        self.img_list = img_list
         self.root = os.path.join(root, 'JPEGImages')
 
         self.totensor = transforms.Compose([
@@ -74,18 +72,22 @@ class Pascal(Dataset):
         return len(self.img_list)
 
     def __getitem__(self, idx):
-        label, img_name = self.img_list[idx]
+        label, img_name, posi = self.img_list[idx]
         img = pickle.load(open(os.path.join(self.root, img_name+'.pkl'), 'rb'))
         img = self.totensor(img)
-        return img[0].unsqueeze(0), img[1:], label
+        return img[0].unsqueeze(0), img[1:], label, posi
 
 
 def load_data(root, label_list):
     """
     """
     print('==== Loading data.. ====')
-    train_set = Pascal(root, label_list, True)
-    test_set = Pascal(root, label_list, False)
+    lab_saver = LabSaver(os.path.join(root, 'JPEGImages'))
+    img_list = get_img_list(os.path.join(root, 'ImageSets/Main'),
+                            label_list, lab_saver)
+
+    train_set = Pascal(img_list[:-10000])
+    test_set = Pascal(img_list[-10000:])
     train_loader = DataLoader(train_set, batch_size=128,
                               shuffle=True, num_workers=0)
     test_loader = DataLoader(test_set, batch_size=64,

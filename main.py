@@ -55,7 +55,7 @@ def train(dataloader, epoch_num, class_num,
         classify_loss_sum = 0
         batch_loss = 0
         start_time = datetime.datetime.now()
-        for i, (gray_img, ab_img, label) in enumerate(dataloader):
+        for i, (gray_img, ab_img, label, posi) in enumerate(dataloader):
             if use_cuda:
                 gray_img = gray_img.cuda()
                 ab_img = ab_img.cuda()
@@ -71,7 +71,13 @@ def train(dataloader, epoch_num, class_num,
             #classify_input = net.module.global_level_net(x)[0]
             #classify_result = net.module.classifier(classify_input)
             ###################
-            classify_loss = classify_criterion(classify_result, label)
+            posi = posi.nonzero()
+            if posi.max() > 0:
+                classify_result = classify_result[posi, :].squeeze(1)
+                label = label[posi, :].squeeze(1)
+                classify_loss = classify_criterion(classify_result, label)
+            else:
+                classify_loss = 0
             colorization_loss = colorization_criterion(result, ab_img)
             #colorization_loss = 0
             loss = colorization_loss + alpha * classify_loss
@@ -110,7 +116,7 @@ def test(dataloader, class_num, net, root):
     net.eval()
 
     total = correct = 0
-    for i, (gray_img, ab_img, label) in enumerate(dataloader):
+    for i, (gray_img, ab_img, label, posi) in enumerate(dataloader):
         if use_cuda:
             gray_img = gray_img.cuda()
             ab_img = ab_img.cuda()
@@ -119,14 +125,18 @@ def test(dataloader, class_num, net, root):
         ab_img = Variable(ab_img)
 
         classify_result, result = net(gray_img)
-        classify_result = torch.max(classify_result.data, 1)[1]
+        posi = posi.nonzero()
+        if posi.max() > 0:
+            classify_result = classify_result[posi, :].squeeze(1)
+            label = label[posi, :].squeeze(1)
+            classify_result = torch.max(classify_result.data, 1)[1]
+            correct += (classify_result == label).sum()
+            total += label.size(0)
+        else:
+            classify_loss = 0
 
-        total += label.size(0)
-        correct += (classify_result == label).sum()
-
-        if i%20 == 0:
-            save_img(root, i, result.data,
-                     gray_img.data, ab_img.data)
+        save_img(root, i, result.data,
+                 gray_img.data, ab_img.data)
     print('Classification accuracy: %d %%' % (100 * correct / total))
     test_log(correct / total)
 
